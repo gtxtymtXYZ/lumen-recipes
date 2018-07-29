@@ -47,13 +47,13 @@ class RequestRestriction
         $current = \Cache::get($key, $this->limitPerTenMinutes);
 
         if($current == 0) {
-            return response()
-                ->json([
-                    'message' => 'Query limit reached.'
-                ], 429)
-                ->withHeaders([
-                    'Requests-Limit' => $current
-                ]);
+            return $this->response(
+                response()
+                    ->json([
+                        'message' => 'Query limit reached.'
+                    ], 429),
+                $current
+            );
         }
 
         /** @var Response $response */
@@ -61,9 +61,19 @@ class RequestRestriction
 
         in_array($response->getStatusCode(), $this->allowStatusCodes) && \Cache::set($key, --$current, 10);
 
+        return $this->response($response, $current);
+    }
+
+    /**
+     * @param mixed $response
+     * @param int $limit
+     * @return mixed
+     */
+    private function response($response, int $limit)
+    {
         return $response
             ->withHeaders([
-                'Requests-Limit' => $current
+                'Requests-Limit' => $limit
             ]);
     }
 }
